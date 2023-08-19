@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">LegoStore</string>
+    <string name="email">Correo</string>
+    <string name="password">Contraseña</string>
+    <string name="forgotPassword">Olvidaste tu contraseña?</string>
+    <string name="firstName">Nombre</string>
+    <string name="lastName">Apellido</string>
+    <string name="login">Iniciar sesión</string>
+    <string name="createAct">Registrarse</string>
+    <string name="change_theme">Tema:</string>
+    <string name="txtDarkTheme">Dark</string>
+    <string name="txtLightTheme">Light</string>
+
+    <string name="count">Cantidad: %1$s</string>
+    <string name="price">Precio: $%1$s</string>
+    <string name="empty_stock">No hay en stock</string>
+    <string name="value_unit">Unidad: $%1$s</string>
+    <string name="buy">Comprar</string>
+    <string name="close">Cerrar</string>
+    <string name="total">Total: $%1$s</string>
+    <string name="no_more">Ya no puedes agregar más</string>
+</resources>

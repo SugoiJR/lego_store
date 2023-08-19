@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="base_url">https://us-central1-api-back-admission-test.cloudfunctions.net/</string>
+</resources>

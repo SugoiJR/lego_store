@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "56523932791",
+    "project_id": "legostore-b87de",
+    "storage_bucket": "legostore-b87de.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:56523932791:android:f90ea987284d0b5bf7b272",
+        "android_client_info": {
+          "package_name": "com.storeapp.lego"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "56523932791-s64jni9kd497njk9prgudp80v5ca9gas.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTxYTs7NtAkwtHdiTFb0QDIW6uf1il5Us"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "56523932791-s64jni9kd497njk9prgudp80v5ca9gas.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
