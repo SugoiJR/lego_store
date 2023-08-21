@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 
 package com.storeapp.lego.ui.screens
 
@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -29,14 +30,23 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.storeapp.lego.R
 import com.storeapp.lego.domain.model.RegisterModel
 import com.storeapp.lego.ui.component.LoadingDialog
+import com.storeapp.lego.ui.component.TextFieldIcons
 import com.storeapp.lego.ui.component.TextFieldLeftIcon
 import com.storeapp.lego.ui.navigate.ScreensRoute
 import com.storeapp.lego.ui.screens.viewmodels.LoginViewModel
@@ -45,19 +55,22 @@ import com.storeapp.lego.utils.UIState
 import kotlinx.coroutines.launch
 
 @Composable
-fun RegisterScreen(navController: NavHostController, viewModel: LoginViewModel) {
+fun RegisterScreen(navController: NavHostController, viewModel: LoginViewModel = hiltViewModel()) {
     val state by viewModel.onRegister.observeAsState()
     var loading by remember { mutableStateOf(false) }
+    var isPasswordVisible by remember { mutableStateOf(false) }
 
+    val keyboardController = LocalSoftwareKeyboardController.current
     val snackBarState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     loading = when (state) {
         is UIState.Loading -> true
         is UIState.Error -> {
+            val err = (state as UIState.Error)
             LaunchedEffect(key1 = true, block = {
                 snackBarState.showSnackbar(
-                    message = (state as UIState.Error).title,
+                    message = "${err.title} - ${err.message}",
                     duration = SnackbarDuration.Long
                 )
             })
@@ -126,18 +139,38 @@ fun RegisterScreen(navController: NavHostController, viewModel: LoginViewModel) 
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                TextFieldLeftIcon(
+                TextFieldIcons(
                     value = password,
                     onChangeText = { password = it },
                     placeholder = stringResource(id = R.string.password),
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth()
+                    visualTransformation = if (isPasswordVisible) {
+                        VisualTransformation.None
+                    } else PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                            Icon(
+                                painter = painterResource(
+                                    id = if (isPasswordVisible) {
+                                        R.drawable.baseline_visibility_off_24
+                                    } else R.drawable.baseline_visibility_24
+                                ), contentDescription = "Toggle password visibility"
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.None,
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                        autoCorrect = false
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
                     onClick = {
+                        keyboardController?.hide()
                         if (password.length < 7) {
                             scope.launch {
                                 snackBarState.showSnackbar(

@@ -29,7 +29,7 @@ class LoginViewModel @Inject constructor(
                 when (it.isSuccessful) {
                     true -> _onLogin.value = UIState.Success(it.isSuccessful)
                     false -> _onLogin.value = UIState.Error(
-                        title = "authentication isSuccessful: ${it.isSuccessful}",
+                        title = "authentication failed",
                         message = it.exception?.message
                     )
                 }
@@ -41,9 +41,16 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             _onRegister.value = UIState.Loading
             loginFirebaseUseCase.register(registerModel).addOnCompleteListener {
-                _onRegister.value = UIState.Success(true)
+                if (it.isSuccessful){
+                    _onRegister.value = UIState.Success(true)
+                } else {
+                    _onRegister.value = UIState.Error(
+                        title = "Register failed",
+                        message = it.exception?.message
+                    )
+                }
             }.addOnFailureListener {
-                UIState.Error(
+                _onRegister.value = UIState.Error(
                     title = "Register failed",
                     message = it.message
                 )

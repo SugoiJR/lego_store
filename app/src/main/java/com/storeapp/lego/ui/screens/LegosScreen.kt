@@ -2,7 +2,6 @@
 
 package com.storeapp.lego.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavHostController
@@ -58,15 +58,7 @@ import com.storeapp.lego.utils.UiLisState
 import kotlinx.coroutines.launch
 
 @Composable
-fun LegosScreen(viewModel: LegoViewModel, navController: NavHostController) {
-    var serviceCalled by remember { mutableStateOf(false) }
-
-    LaunchedEffect(serviceCalled) {
-        if (!serviceCalled) {
-            viewModel.getProducts()
-            serviceCalled = true
-        }
-    }
+fun LegosScreen(viewModel: LegoViewModel = hiltViewModel(), navController: NavHostController) {
 
     val loading by viewModel.loading.observeAsState(initial = false)
     val cart by viewModel.cart.collectAsState(initial = emptyList())
@@ -77,7 +69,6 @@ fun LegosScreen(viewModel: LegoViewModel, navController: NavHostController) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-
 
     val uiState by produceState<UiLisState>(
         initialValue = UiLisState.Loading, key1 = lifecycle, key2 = viewModel
@@ -135,6 +126,9 @@ fun LegosScreen(viewModel: LegoViewModel, navController: NavHostController) {
                         )
                     } else {
                         EmptyStock(paddingValues)
+                        LaunchedEffect(true) {
+                            viewModel.getProducts()
+                        }
                     }
                 }
             }

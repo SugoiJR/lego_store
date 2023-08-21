@@ -24,15 +24,19 @@ class LoginFirebaseRepo @Inject constructor(
             registerModel.email, registerModel.password
         ).addOnCompleteListener {
 
-            val user = firebaseAuth.currentUser!!
-            user.sendEmailVerification()
+            if (it.isSuccessful){
+                val user = firebaseAuth.currentUser!!
+                user.sendEmailVerification()
 
-            val currentUserDb = dbReference.child(user.uid)
-            currentUserDb.child("firstName").setValue(registerModel.firstName)
-            currentUserDb.child("lastName").setValue(registerModel.lastName)
-            Log.d("TAG-REGISTERED", "true")
+                val currentUserDb = dbReference.child(user.uid)
+                currentUserDb.child("firstName").setValue(registerModel.firstName)
+                currentUserDb.child("lastName").setValue(registerModel.lastName)
+                Log.d("TAG-REGISTERED", "true")
+            } else {
+                Log.e("TAG-REGISTERED_ERR", it.exception?.message ?: "null")
+            }
         }.addOnFailureListener {
-            Log.d("TAG-REGISTERED", "false - $it")
+            Log.e("TAG-REGISTERED_EXCEPTION", "false - $it")
         }
     }
 }

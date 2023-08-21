@@ -12,19 +12,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
 import com.storeapp.lego.R
 import com.storeapp.lego.ui.navigate.ScreensRoute
-import com.storeapp.lego.utils.Helpers.replaceScreen
 import kotlinx.coroutines.delay
 
 @Composable
-fun SplashScreen(navController: NavHostController) {
+fun SplashScreen(
+    onNavigationSwitch: (route: String) -> Unit
+) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
+
         Image(
             painter = painterResource(id = R.drawable.baseline_lens_blur_24),
             contentDescription = "splash",
@@ -38,9 +39,9 @@ fun SplashScreen(navController: NavHostController) {
             val auth = FirebaseAuth.getInstance().currentUser
 
             if (auth != null) {
-                replaceScreen(navController, ScreensRoute.LegoStoreScreen.route)
+                onNavigationSwitch(ScreensRoute.LegoStoreScreen.route)
             } else {
-                replaceScreen(navController, ScreensRoute.LoginScreen.route)
+                onNavigationSwitch(ScreensRoute.LoginScreen.route)
             }
         })
     }

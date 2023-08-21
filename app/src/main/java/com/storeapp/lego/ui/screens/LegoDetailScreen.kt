@@ -21,6 +21,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,37 +42,34 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.storeapp.lego.R
+import com.storeapp.lego.domain.model.DetailLegoModel
 import com.storeapp.lego.domain.model.LegoModel
 import com.storeapp.lego.ui.component.DialogBuyLego
 import com.storeapp.lego.ui.component.LoadingDialog
 import com.storeapp.lego.ui.component.TopBarShoppingCar
 import com.storeapp.lego.ui.screens.viewmodels.DetLegoViewModel
+import com.storeapp.lego.utils.ResState
 
 @Composable
 fun DetailLegoScreen(
-    viewModel: DetLegoViewModel,
+    viewModel: DetLegoViewModel = hiltViewModel(),
     navController: NavHostController,
     legoId: String
 ) {
-    var serviceCalled by remember { mutableStateOf(false) }
 
-    LaunchedEffect(serviceCalled) {
-        if (!serviceCalled) {
-            viewModel.getDetailLego(legoId)
-            serviceCalled = true
-        }
-    }
-
+    val buyLegos by viewModel.buyState.observeAsState(ResState.Success(false))
     val loading by viewModel.loading.observeAsState(initial = false)
     val detail by viewModel.infoDetail.observeAsState()
-    var buyDialog by remember { mutableStateOf(false) }
 
     val lego by viewModel.lego(legoId).collectAsState(initial = null)
     val cart by viewModel.cart.collectAsState(initial = emptyList())
 
+    var buyDialog by remember { mutableStateOf(false) }
+    val snackBarState = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {
@@ -85,7 +85,8 @@ fun DetailLegoScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackBarState) }
     ) { paddingValues ->
 
         when (lego) {
@@ -103,10 +104,40 @@ fun DetailLegoScreen(
                 }
             }
 
-            else -> BodyDet(paddingValues, lego!!, detail?.description) {
-                viewModel.addCart(it)
+            else -> {
+                if (detail is ResState.Error) {
+                    LaunchedEffect(key1 = true) {
+                        val err = detail as ResState.Error
+                        snackBarState.showSnackbar(
+                            message = "${err.message} - ${err.cause}",
+                            duration = SnackbarDuration.Short
+                        )
+                    }
+                }
+
+                BodyDet(paddingValues, lego!!, detail) {
+                    viewModel.addCart(it)
+                }
+
+                when (buyLegos) {
+                    is ResState.Error -> {
+                        val err = (buyLegos as ResState.Error)
+                        LaunchedEffect(key1 = true) {
+                            snackBarState.showSnackbar(
+                                message = "${err.message} - ${err.cause}",
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                    }
+                    is ResState.Success -> {
+                        val stateBuy = (buyLegos as ResState.Success<Boolean>).data
+                        if (stateBuy) navController.popBackStack()
+                    }
+                }
             }
         }
+
+        LaunchedEffect(true) { viewModel.getDetailLego(legoId) }
 
         DialogBuyLego(
             visible = buyDialog, carLegos = cart,
@@ -116,6 +147,7 @@ fun DetailLegoScreen(
                 viewModel.buyLegos(cart)
             }
         )
+
         LoadingDialog(showLoading = loading)
     }
 }
@@ -124,7 +156,7 @@ fun DetailLegoScreen(
 fun BodyDet(
     paddingValues: PaddingValues,
     lego: LegoModel,
-    description: String?,
+    description: ResState<DetailLegoModel>?,
     setItemCar: (LegoModel) -> Unit = {}
 ) {
     Column(
@@ -177,7 +209,9 @@ fun BodyDet(
                 )
             }
 
-            if (description != null) Text(text = description)
+            if (description is ResState.Success) {
+                Text(text = description.data.description)
+            }
 
         }
     }

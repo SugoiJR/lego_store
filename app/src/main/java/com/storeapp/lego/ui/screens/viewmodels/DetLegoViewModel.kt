@@ -25,8 +25,11 @@ class DetLegoViewModel @Inject constructor(
 
     val cart: Flow<List<ShoppingCarModel>> = shoppingCarUseCase.flowCart()
 
-    private val _infoDetail: MutableLiveData<DetailLegoModel> = MutableLiveData()
-    val infoDetail: LiveData<DetailLegoModel> = _infoDetail
+    private val _infoDetail: MutableLiveData<ResState<DetailLegoModel>> = MutableLiveData()
+    val infoDetail: LiveData<ResState<DetailLegoModel>> = _infoDetail
+
+    private val _buyState: MutableLiveData<ResState<Boolean>> = MutableLiveData()
+    val buyState: LiveData<ResState<Boolean>> = _buyState
 
     private val _loading: MutableLiveData<Boolean> = MutableLiveData()
     val loading: LiveData<Boolean> = _loading
@@ -35,9 +38,13 @@ class DetLegoViewModel @Inject constructor(
         viewModelScope.launch {
             _loading.value = true
             when (val info = detailLegoUseCase.getDetail(id)) {
-                is ResState.Error -> _loading.value = false
+                is ResState.Error -> {
+                    _infoDetail.value = ResState.Error(info.message, info.cause)
+                    _loading.value = false
+                }
+
                 is ResState.Success -> {
-                    _infoDetail.value = info.data
+                    _infoDetail.value = ResState.Success(info.data)
                     _loading.value = false
                 }
             }
@@ -53,15 +60,27 @@ class DetLegoViewModel @Inject constructor(
     fun buyLegos(legos: List<ShoppingCarModel>) {
         viewModelScope.launch {
             _loading.value = true
-            when (shoppingCarUseCase.buy()) {
-                is ResState.Error -> _loading.value = false
+            when (val shopping = shoppingCarUseCase.buy()) {
+                is ResState.Error -> {
+                    _loading.value = false
+                    _buyState.value = ResState.Error(shopping.message, shopping.cause)
+                }
+
                 is ResState.Success -> {
-                    when (shoppingCarUseCase.updateLegos(legos)) {
-                        is ResState.Error -> _loading.value = false
-                        is ResState.Success -> _loading.value = false
+                    when (val db = shoppingCarUseCase.updateLegos(legos)) {
+                        is ResState.Error -> {
+                            _loading.value = false
+                            _buyState.value = ResState.Error(db.message, db.cause)
+                        }
+
+                        is ResState.Success -> {
+                            _loading.value = false
+                            _buyState.value = ResState.Success(true)
+                        }
                     }
                 }
             }
         }
     }
+
 }

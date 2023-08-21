@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
+
 package com.storeapp.lego.ui.screens
 
 import androidx.compose.foundation.Image
@@ -5,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,22 +19,30 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ShapeDefaults
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -44,7 +55,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.storeapp.lego.R
 import com.storeapp.lego.ui.component.LoadingDialog
 import com.storeapp.lego.ui.component.TextFieldIcons
@@ -52,31 +63,49 @@ import com.storeapp.lego.ui.component.TextFieldLeftIcon
 import com.storeapp.lego.ui.navigate.ScreensRoute
 import com.storeapp.lego.ui.screens.viewmodels.LoginViewModel
 import com.storeapp.lego.ui.theme.LegoStoreTheme
-import com.storeapp.lego.utils.Helpers.replaceScreen
 import com.storeapp.lego.utils.UIState
 
 @Composable
-fun LoginScreen(viewModel: LoginViewModel, navController: NavHostController) {
+fun LoginScreen(
+    viewModel: LoginViewModel = hiltViewModel(),
+    onNavigation: (route: String, replace: Boolean) -> Unit
+) {
 
     val stateLogin by viewModel.onLogin.observeAsState()
     var loading by remember { mutableStateOf(false) }
+    val snackBarState = remember { SnackbarHostState() }
+
 
     when (stateLogin) {
         UIState.Loading -> loading = true
-        is UIState.Error -> loading = false
-        is UIState.Success<*> -> replaceScreen(
-            navController, ScreensRoute.LegoStoreScreen.route
-        )
+        is UIState.Error -> {
+            val err = (stateLogin as UIState.Error)
+            LaunchedEffect(key1 = true, block = {
+                snackBarState.showSnackbar(
+                    message = "${err.title} - ${err.message}",
+                    duration = SnackbarDuration.Long
+                )
+            })
+            loading = false
+        }
+
+        is UIState.Success<*> -> onNavigation(ScreensRoute.LegoStoreScreen.route, true)
 
         else -> loading = false
     }
 
-    BodyLogin(loading, isSystemInDarkTheme(),
-        onLogin = { name, pass ->
-            viewModel.doLogin(name, pass)
-        },
-        onRegister = { navController.navigate(ScreensRoute.RegisterScreen.route) }
-    )
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackBarState) }
+    ) {
+        Box(modifier = Modifier.padding(it)) {
+            BodyLogin(loading, isSystemInDarkTheme(),
+                onLogin = { name, pass ->
+                    viewModel.doLogin(name, pass)
+                },
+                onRegister = { onNavigation(ScreensRoute.RegisterScreen.route, false) }
+            )
+        }
+    }
 }
 
 @Composable
@@ -86,13 +115,14 @@ fun BodyLogin(
     onLogin: (String, String) -> Unit = { _, _ -> },
     onRegister: () -> Unit = {}
 ) {
-    var name by remember { mutableStateOf("") }
-    var pass by remember { mutableStateOf("") }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    var name by remember { mutableStateOf("test@gmail.com") }
+    var pass by remember { mutableStateOf("1234567") }
     var isPasswordVisible by remember { mutableStateOf(false) }
-    var isDarkTheme by remember { mutableStateOf(isDarkTheme) }
+    var darkTheme by remember { mutableStateOf(isDarkTheme) }
 
     LegoStoreTheme(
-        darkTheme = isDarkTheme
+        darkTheme = darkTheme
     ) {
         Column(
             modifier = Modifier
@@ -120,8 +150,8 @@ fun BodyLogin(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Switch(
-                        checked = isDarkTheme,
-                        onCheckedChange = { isDarkTheme = it },
+                        checked = darkTheme,
+                        onCheckedChange = { darkTheme = it },
                         colors = SwitchDefaults.colors(
                             uncheckedBorderColor = MaterialTheme.colorScheme.primary,
                             uncheckedThumbColor = MaterialTheme.colorScheme.primary,
@@ -130,7 +160,7 @@ fun BodyLogin(
                     )
                     Text(
                         text = stringResource(id = R.string.change_theme) + " " +
-                                if (isDarkTheme) stringResource(
+                                if (darkTheme) stringResource(
                                     id = R.string.txtDarkTheme
                                 ) else stringResource(
                                     id = R.string.txtLightTheme
@@ -193,12 +223,16 @@ fun BodyLogin(
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.None,
                     keyboardType = KeyboardType.Password,
-                    autoCorrect = false
+                    autoCorrect = false,
+                    imeAction = ImeAction.Done
                 )
             )
 
             Button(
-                onClick = { onLogin(name, pass) },
+                onClick = {
+                    keyboardController?.hide()
+                    onLogin(name, pass)
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(20.dp)

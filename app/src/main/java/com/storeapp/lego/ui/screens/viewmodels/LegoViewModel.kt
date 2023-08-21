@@ -1,5 +1,6 @@
 package com.storeapp.lego.ui.screens.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -32,7 +33,7 @@ class LegoViewModel @Inject constructor(
         .catch { UiLisState.Error("Failed get lego list", it) }
         .stateIn(
             viewModelScope,
-            SharingStarted.WhileSubscribed(4000),
+            SharingStarted.WhileSubscribed(2000),
             UiLisState.Loading
         )
 
@@ -40,7 +41,6 @@ class LegoViewModel @Inject constructor(
 
     private val _loading: MutableLiveData<Boolean> = MutableLiveData()
     val loading: LiveData<Boolean> = _loading
-
 
     fun getProducts() {
         viewModelScope.launch {
@@ -84,4 +84,5 @@ class LegoViewModel @Inject constructor(
             }
         }
     }
+
 }
