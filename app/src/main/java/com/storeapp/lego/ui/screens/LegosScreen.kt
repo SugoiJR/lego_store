@@ -20,7 +20,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -36,30 +35,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.NavHostController
 import com.storeapp.lego.R
 import com.storeapp.lego.domain.model.LegoModel
 import com.storeapp.lego.ui.component.DialogBuyLego
+import com.storeapp.lego.ui.component.EmptyBody
 import com.storeapp.lego.ui.component.LegoItem
 import com.storeapp.lego.ui.component.LoadingDialog
 import com.storeapp.lego.ui.component.TopBarShoppingCar
 import com.storeapp.lego.ui.navigate.ScreensRoute
 import com.storeapp.lego.ui.screens.viewmodels.LegoViewModel
-import com.storeapp.lego.utils.Helpers.replaceScreen
 import com.storeapp.lego.utils.UiLisState
 import kotlinx.coroutines.launch
 
 @Composable
-fun LegosScreen(viewModel: LegoViewModel = hiltViewModel(), navController: NavHostController) {
-
+fun LegosScreen(
+    viewModel: LegoViewModel = hiltViewModel(),
+    onNav: (route: String, replace: Boolean) -> Unit
+) {
     val loading by viewModel.loading.observeAsState(initial = false)
     val cart by viewModel.cart.collectAsState(initial = emptyList())
 
@@ -85,14 +82,15 @@ fun LegosScreen(viewModel: LegoViewModel = hiltViewModel(), navController: NavHo
                 options = {
                     IconButton(onClick = {
                         viewModel.logout()
-                        replaceScreen(navController, ScreensRoute.SplashScreen.route)
+                        onNav(ScreensRoute.SplashScreen.route, true)
                     }) {
                         Icon(
                             painter = painterResource(id = R.drawable.baseline_logout_24),
                             contentDescription = "shopping_cart"
                         )
                     }
-                })
+                }
+            )
         },
         snackbarHost = { SnackbarHost(hostState = snackBarState) },
         content = { paddingValues ->
@@ -101,9 +99,10 @@ fun LegosScreen(viewModel: LegoViewModel = hiltViewModel(), navController: NavHo
                     FlowLoading(paddingValues)
                 }
 
-                is UiLisState.Error -> EmptyStock(paddingValues)
+                is UiLisState.Error -> EmptyBody(paddingValues)
                 is UiLisState.Success -> {
                     val list = (uiState as UiLisState.Success).data
+
                     if (list.isNotEmpty()) {
                         BodyLego(paddingValues, list,
                             addCar = {
@@ -119,17 +118,16 @@ fun LegosScreen(viewModel: LegoViewModel = hiltViewModel(), navController: NavHo
                                 viewModel.addCart(it)
                             },
                             navigateDetail = {
-                                navController.navigate(
-                                    route = ScreensRoute.DetailLegoScreen.route + "/$it"
-                                )
+                                onNav(ScreensRoute.DetailLegoScreen.route + "/$it", false)
                             }
                         )
                     } else {
-                        EmptyStock(paddingValues)
+                        EmptyBody(paddingValues)
                         LaunchedEffect(true) {
                             viewModel.getProducts()
                         }
                     }
+
                 }
             }
             DialogBuyLego(
@@ -144,20 +142,6 @@ fun LegosScreen(viewModel: LegoViewModel = hiltViewModel(), navController: NavHo
         }
 
     )
-}
-
-@Composable
-fun EmptyStock(paddingValues: PaddingValues) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues = paddingValues),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = stringResource(R.string.empty_stock), fontSize = TextUnit(20f, TextUnitType.Sp)
-        )
-    }
 }
 
 @Composable

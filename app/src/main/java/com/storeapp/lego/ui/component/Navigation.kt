@@ -39,19 +39,33 @@ fun Navigation() {
             }
         }
         composable(ScreensRoute.RegisterScreen.route) {
-            RegisterScreen(navController = navController)
+            RegisterScreen(
+                onBack = { navController.popBackStack() },
+                onNav = {
+                    navController.popBackStack()
+                    replaceScreen(navController, it)
+                }
+            )
         }
         composable(ScreensRoute.LegoStoreScreen.route) {
-            LegosScreen(navController = navController)
+            LegosScreen { route, replace ->
+                when (replace) {
+                    true -> replaceScreen(navController, route)
+                    false -> navController.navigate(route) {
+                        launchSingleTop = true
+                    }
+                }
+            }
         }
         composable(
             route = ScreensRoute.DetailLegoScreen.route + "/{legoId}",
             arguments = listOf(navArgument(name = "legoId") { type = NavType.StringType })
         ) { backStackEntry ->
             DetailLegoScreen(
-                navController = navController,
                 legoId = backStackEntry.arguments?.getString("legoId") ?: ""
-            )
+            ) {
+                navController.popBackStack()
+            }
         }
     }
 }

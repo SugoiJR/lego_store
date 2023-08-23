@@ -2,7 +2,6 @@
 
 package com.storeapp.lego.ui.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,18 +36,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.storeapp.lego.R
 import com.storeapp.lego.domain.model.DetailLegoModel
 import com.storeapp.lego.domain.model.LegoModel
 import com.storeapp.lego.ui.component.DialogBuyLego
+import com.storeapp.lego.ui.component.EmptyBody
 import com.storeapp.lego.ui.component.LoadingDialog
 import com.storeapp.lego.ui.component.TopBarShoppingCar
 import com.storeapp.lego.ui.screens.viewmodels.DetLegoViewModel
@@ -57,10 +55,9 @@ import com.storeapp.lego.utils.ResState
 @Composable
 fun DetailLegoScreen(
     viewModel: DetLegoViewModel = hiltViewModel(),
-    navController: NavHostController,
-    legoId: String
+    legoId: String,
+    onBack: () -> Unit
 ) {
-
     val buyLegos by viewModel.buyState.observeAsState(ResState.Success(false))
     val loading by viewModel.loading.observeAsState(initial = false)
     val detail by viewModel.infoDetail.observeAsState()
@@ -77,7 +74,7 @@ fun DetailLegoScreen(
                 itemsCart = cart,
                 displayCartDialog = { buyDialog = true },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { onBack() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "det_back"
@@ -91,17 +88,10 @@ fun DetailLegoScreen(
 
         when (lego) {
             null -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues = paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.baseline_error_outline_24),
-                        contentDescription = null
-                    )
-                }
+                EmptyBody(
+                    paddingValues = paddingValues,
+                    message = stringResource(R.string.try_later)
+                )
             }
 
             else -> {
@@ -115,25 +105,20 @@ fun DetailLegoScreen(
                     }
                 }
 
+                if (buyLegos is ResState.Error) {
+                    LaunchedEffect(key1 = true) {
+                        val err = (buyLegos as ResState.Error)
+                        snackBarState.showSnackbar(
+                            message = "${err.message} - ${err.cause}",
+                            duration = SnackbarDuration.Short
+                        )
+                    }
+                }
+
                 BodyDet(paddingValues, lego!!, detail) {
                     viewModel.addCart(it)
                 }
 
-                when (buyLegos) {
-                    is ResState.Error -> {
-                        val err = (buyLegos as ResState.Error)
-                        LaunchedEffect(key1 = true) {
-                            snackBarState.showSnackbar(
-                                message = "${err.message} - ${err.cause}",
-                                duration = SnackbarDuration.Short
-                            )
-                        }
-                    }
-                    is ResState.Success -> {
-                        val stateBuy = (buyLegos as ResState.Success<Boolean>).data
-                        if (stateBuy) navController.popBackStack()
-                    }
-                }
             }
         }
 
@@ -154,8 +139,7 @@ fun DetailLegoScreen(
 
 @Composable
 fun BodyDet(
-    paddingValues: PaddingValues,
-    lego: LegoModel,
+    paddingValues: PaddingValues, lego: LegoModel,
     description: ResState<DetailLegoModel>?,
     setItemCar: (LegoModel) -> Unit = {}
 ) {

@@ -42,7 +42,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import com.storeapp.lego.R
 import com.storeapp.lego.domain.model.RegisterModel
 import com.storeapp.lego.ui.component.LoadingDialog
@@ -50,12 +49,15 @@ import com.storeapp.lego.ui.component.TextFieldIcons
 import com.storeapp.lego.ui.component.TextFieldLeftIcon
 import com.storeapp.lego.ui.navigate.ScreensRoute
 import com.storeapp.lego.ui.screens.viewmodels.LoginViewModel
-import com.storeapp.lego.utils.Helpers.replaceScreen
 import com.storeapp.lego.utils.UIState
 import kotlinx.coroutines.launch
 
 @Composable
-fun RegisterScreen(navController: NavHostController, viewModel: LoginViewModel = hiltViewModel()) {
+fun RegisterScreen(
+    viewModel: LoginViewModel = hiltViewModel(),
+    onNav: (route: String) -> Unit,
+    onBack: () -> Unit,
+) {
     val state by viewModel.onRegister.observeAsState()
     var loading by remember { mutableStateOf(false) }
     var isPasswordVisible by remember { mutableStateOf(false) }
@@ -78,8 +80,7 @@ fun RegisterScreen(navController: NavHostController, viewModel: LoginViewModel =
         }
 
         is UIState.Success<*> -> {
-            navController.popBackStack()
-            replaceScreen(navController, ScreensRoute.LegoStoreScreen.route)
+            onNav(ScreensRoute.LegoStoreScreen.route)
             false
         }
 
@@ -98,7 +99,7 @@ fun RegisterScreen(navController: NavHostController, viewModel: LoginViewModel =
                     Text(text = stringResource(id = R.string.createAct))
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { onBack() }) {
                         Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "back")
                     }
                 }

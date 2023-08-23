@@ -79,7 +79,9 @@ class DetLegoViewModel @Inject constructor(
                         }
                     }
                 }
+
             }
+
         }
     }
 

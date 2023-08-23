@@ -116,8 +116,8 @@ fun BodyLogin(
     onRegister: () -> Unit = {}
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
-    var name by remember { mutableStateOf("test@gmail.com") }
-    var pass by remember { mutableStateOf("1234567") }
+    var name by remember { mutableStateOf("") }
+    var pass by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
     var darkTheme by remember { mutableStateOf(isDarkTheme) }
 
